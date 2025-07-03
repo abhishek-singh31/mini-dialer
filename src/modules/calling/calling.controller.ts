@@ -21,4 +21,12 @@ export class CallingController {
     res.type('text/xml');
     res.send(twiml);
   }
+
+  @Post('transfer')
+  async transferCallHandler(@Body() body, @Res() res) {
+    this.logger.log('Transfer call handler', body);
+    const twiml = await this.callingService.handleTransferCall(body);
+    res.type('text/xml');
+    res.send(twiml);
+  }
 }
