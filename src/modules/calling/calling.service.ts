@@ -16,7 +16,15 @@ export class CallingService {
     const { To: to } = body;
     const response = new Twilio.twiml.VoiceResponse();
     response.say('We are connecting you. Please wait');
-    response.dial({ callerId: process.env.TWILIO_PHONE_NUMBER }).number(to);
+    response.dial({ callerId: process.env.TWILIO_PHONE_NUMBER }).number(
+      {
+        statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+        statusCallback:
+          'https://abhishek-mini-dialer.in.ngrok.io/v1/calling/status-callback/outbound',
+        statusCallbackMethod: 'POST',
+      },
+      to,
+    );
     const twiml = response.toString();
     return twiml;
   };
@@ -25,7 +33,15 @@ export class CallingService {
     const response = new Twilio.twiml.VoiceResponse();
     response.say('Welcome to mini dialer');
     response.pause({ length: 1 });
-    response.dial().client(process.env.TWILIO_CLIENT_IDENTITY);
+    response.dial().client(
+      {
+        statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+        statusCallback:
+          'https://abhishek-mini-dialer.in.ngrok.io/v1/calling/status-callback/inbound',
+        statusCallbackMethod: 'POST',
+      },
+      process.env.TWILIO_CLIENT_IDENTITY,
+    );
     const twiml = response.toString();
     return twiml;
   };
@@ -57,8 +73,7 @@ export class CallingService {
 
   moveToConference = async (callSid: string, conferenceName: string) => {
     const response = new Twilio.twiml.VoiceResponse();
-    response.say('Joining the conference');
-    response.dial().conference(conferenceName);
+    response.dial().conference({ beep: 'false' }, conferenceName);
     const twiml = response.toString();
     await this.twilioClient.calls(callSid).update({ twiml });
   };

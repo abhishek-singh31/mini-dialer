@@ -22,6 +22,18 @@ export class CallingController {
     res.send(twiml);
   }
 
+  @Post('status-callback/outbound')
+  async outboundStatusCallbackHandler(@Body() body, @Res() res) {
+    this.logger.log('Outbound status callback handler', body);
+    res.send(true);
+  }
+
+  @Post('status-callback/inbound')
+  async inboundStatusCallbackHandler(@Body() body, @Res() res) {
+    this.logger.log('Inbound status callback handler', body);
+    res.send(true);
+  }
+
   @Post('handle-hold')
   async holdCallHandler(@Body() body, @Res() res) {
     this.logger.log('Hold call handler', body);
