@@ -50,6 +50,10 @@
         background: #359fdc;
         color: #fff;
       }
+      #hold-button {
+        background: #3e60f5;
+        color: #fff;
+      }
       #transfer-button {
         background: #e4ba13;
         color: #fff;
@@ -87,7 +91,8 @@
     <button id="call-button">Call</button>
     <button id="hangup-button" disabled>Hang up</button>
     <button id="mute-button" disabled>Mute</button>
-    <button id="transfer-button" disabled>Transfer</button>
+    <button id="hold-button" disabled>Hold</button>
+    <button id="transfer-button" disabled>Cold Transfer</button>
 
     <div id="incoming-call" style="display: none; margin-top: 1rem; padding: 1rem; background: #e9ecef; border-radius: 0.5rem;">
       <h3>Incoming Call</h3>
@@ -102,6 +107,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2/dist/twilio.min.js"></script>
 
     <script>
+      let currentConferenceSid = null;
       (async () => {
         const logEl = document.getElementById('log');
         const appendLog = (msg) => {
@@ -114,6 +120,7 @@
           document.getElementById('hangup-button').disabled = !inCall;
           document.getElementById('mute-button').disabled = !inCall;
           document.getElementById('transfer-button').disabled = !inCall;
+          document.getElementById('hold-button').disabled = !inCall;
         }
 
         /**
@@ -188,7 +195,8 @@
               document.getElementById('mute-button').textContent = 'Mute';
               document.getElementById('mute-button').disabled = true;
               document.getElementById('transfer-button').disabled = true;
-              
+              document.getElementById('hold-button').textContent = 'Hold';
+              currentConferenceSid = null;
               setControls(false);
               activeCall = null;
             });
@@ -220,9 +228,9 @@
               document.getElementById('mute-button').textContent = 'Mute';
               document.getElementById('mute-button').disabled = true;
               document.getElementById('transfer-button').disabled = true;
-
               setControls(false);
               activeCall = null;
+              currentConferenceSid = null;
             });
           }
         });
@@ -234,6 +242,7 @@
             // Hide incoming call UI
             document.getElementById('incoming-call').style.display = 'none';
             pendingIncomingCall = null;
+            currentConferenceSid = null;
           }
         });
 
@@ -249,11 +258,38 @@
           }
         });
 
+        document.getElementById('hold-button').addEventListener('click', async () => {
+          if(activeCall){
+            console.log(activeCall);
+            const isCallOnHold = document.getElementById('hold-button').textContent === 'Unhold';
+            const response = await fetch(
+              'https://abhishek-mini-dialer.in.ngrok.io/v1/calling/handle-hold', {
+                method: 'POST',
+                body: JSON.stringify({
+                  callData: activeCall.parameters,
+                  isCallOnHold,
+                  conferenceSid: currentConferenceSid,
+                }),
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              } 
+            )
+            if(!response.ok){
+              throw new Error('Unable to hold call');
+            }
+            const responseJSON = await response.json();
+            console.log(responseJSON);
+            currentConferenceSid = responseJSON.conferenceSid;
+            isCallOnHold ? appendLog('Call unheld') : appendLog('Call held');
+            document.getElementById('hold-button').textContent = isCallOnHold ? 'Hold' : 'Unhold';
+          }
+        });
+
         document.getElementById('transfer-button').addEventListener('click', async () => {
-          console.log(activeCall.parameters);
           if(activeCall){
             const response = await fetch(
-            'https://abhishek-mini-dialer.in.ngrok.io/v1/calling/transfer', {
+            'https://abhishek-mini-dialer.in.ngrok.io/v1/calling/cold-transfer', {
               method: 'POST',
               body: JSON.stringify({
                 callSid: activeCall.parameters.CallSid,
